@@ -52,7 +52,9 @@ const WebcamCapture = ({ onCapture, isAnalyzing }: WebcamCaptureProps) => {
             onUserMedia={handleUserMedia}
             onUserMediaError={handleUserMediaError}
             videoConstraints={{
-              facingMode: 'environment'
+              width: 1280,
+              height: 720,
+              facingMode: "user"
             }}
           />
         )}
