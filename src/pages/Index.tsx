@@ -3,6 +3,8 @@ import { Leaf, Sparkles } from 'lucide-react';
 import WebcamCapture from '@/components/WebcamCapture';
 import PlantAnalysis from '@/components/PlantAnalysis';
 import AnalysisHistory from '@/components/AnalysisHistory';
+import ExpertChat from '@/components/ExpertChat';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -103,16 +105,26 @@ const Index = () => {
             )}
           </div>
 
-          {/* Right Column - History */}
+          {/* Right Column - History & Chat */}
           <div className="space-y-6">
-            <div className="space-y-2">
-              <h2 className="text-xl font-semibold">Análisis Recientes</h2>
-              <p className="text-muted-foreground text-sm">
-                Historial de análisis de plantas realizados
-              </p>
-            </div>
-            
-            <AnalysisHistory />
+            <Tabs defaultValue="history" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="history">Historial</TabsTrigger>
+                <TabsTrigger value="chat">Chat Experto</TabsTrigger>
+              </TabsList>
+              <TabsContent value="history" className="mt-6">
+                <div className="space-y-2 mb-4">
+                  <h2 className="text-xl font-semibold">Análisis Recientes</h2>
+                  <p className="text-muted-foreground text-sm">
+                    Historial de análisis de plantas realizados
+                  </p>
+                </div>
+                <AnalysisHistory />
+              </TabsContent>
+              <TabsContent value="chat" className="mt-6">
+                <ExpertChat />
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       </main>
