@@ -1,6 +1,8 @@
-import { CheckCircle2, AlertTriangle, Droplets, Bug, Thermometer } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, Droplets, Bug, Thermometer, Share2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 interface PlantAnalysisProps {
   analysis: {
@@ -19,6 +21,27 @@ interface PlantAnalysisProps {
 }
 
 const PlantAnalysis = ({ analysis, capturedImage }: PlantAnalysisProps) => {
+  const handleShare = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: `Diagnóstico: ${analysis.plant_type}`,
+          text: `Estado: ${analysis.health_status}\n\nDiagnóstico: ${analysis.diagnosis}\n\nRecomendaciones: ${analysis.recommendations}`,
+          url: window.location.href
+        });
+        toast.success('Compartido exitosamente');
+      } else {
+        // Fallback: copiar al portapapeles
+        const shareText = `🌱 ${analysis.plant_type}\n\nEstado: ${analysis.health_status}\nConfianza: ${analysis.confidence}%\n\nDiagnóstico: ${analysis.diagnosis}\n\nRecomendaciones: ${analysis.recommendations}`;
+        await navigator.clipboard.writeText(shareText);
+        toast.success('Diagnóstico copiado al portapapeles');
+      }
+    } catch (error) {
+      console.error('Error al compartir:', error);
+      toast.error('Error al compartir');
+    }
+  };
+
   const getStatusColor = (status: string) => {
     const statusLower = status.toLowerCase();
     if (statusLower.includes('saludable')) return 'bg-accent text-accent-foreground';
@@ -52,11 +75,17 @@ const PlantAnalysis = ({ analysis, capturedImage }: PlantAnalysisProps) => {
       {/* Información principal */}
       <Card className="shadow-card">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <CardTitle className="text-2xl">{analysis.plant_type}</CardTitle>
-            <Badge variant="secondary">
-              {analysis.confidence}% confianza
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">
+                {analysis.confidence}% confianza
+              </Badge>
+              <Button onClick={handleShare} variant="outline" size="sm">
+                <Share2 className="w-4 h-4 mr-2" />
+                Compartir
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">

@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Clock, Leaf } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Clock, Leaf, List, LayoutGrid } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -17,6 +18,7 @@ interface HistoryItem {
 const AnalysisHistory = () => {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'list' | 'gallery'>('list');
 
   useEffect(() => {
     fetchHistory();
@@ -60,10 +62,28 @@ const AnalysisHistory = () => {
   return (
     <Card className="shadow-card">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Clock className="w-5 h-5 text-primary" />
-          Historial de Análisis
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="w-5 h-5 text-primary" />
+            Historial de Análisis
+          </CardTitle>
+          <div className="flex gap-1">
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+            >
+              <List className="w-4 h-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'gallery' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('gallery')}
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-[400px] pr-4">
@@ -76,7 +96,7 @@ const AnalysisHistory = () => {
               <Leaf className="w-12 h-12 text-muted-foreground mb-2" />
               <p className="text-muted-foreground">No hay análisis previos</p>
             </div>
-          ) : (
+          ) : viewMode === 'list' ? (
             <div className="space-y-3">
               {history.map((item) => (
                 <div
@@ -97,6 +117,34 @@ const AnalysisHistory = () => {
                           <Badge variant="outline">{item.confidence}%</Badge>
                         )}
                       </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {history.map((item) => (
+                <div
+                  key={item.id}
+                  className="border rounded-lg overflow-hidden hover:shadow-lg transition-smooth group bg-card"
+                >
+                  <div className="aspect-square bg-muted flex items-center justify-center">
+                    <Leaf className="w-16 h-16 text-muted-foreground opacity-50 group-hover:opacity-100 transition-smooth" />
+                  </div>
+                  <div className="p-3">
+                    <h3 className="font-semibold text-sm truncate mb-2">
+                      {item.plant_type || 'Planta desconocida'}
+                    </h3>
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <Badge className={`text-xs ${getStatusColor(item.health_status)}`}>
+                        {item.health_status}
+                      </Badge>
+                      {item.confidence && (
+                        <Badge variant="outline" className="text-xs">
+                          {item.confidence}%
+                        </Badge>
+                      )}
                     </div>
                   </div>
                 </div>
