@@ -4,6 +4,7 @@ import { Camera, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface WebcamCaptureProps {
   onCapture: (imageSrc: string) => void;
@@ -13,6 +14,7 @@ interface WebcamCaptureProps {
 const WebcamCapture = ({ onCapture, isAnalyzing }: WebcamCaptureProps) => {
   const webcamRef = useRef<Webcam>(null);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const isMobile = useIsMobile();
 
   const handleUserMedia = useCallback(() => {
     setHasPermission(true);
@@ -54,7 +56,7 @@ const WebcamCapture = ({ onCapture, isAnalyzing }: WebcamCaptureProps) => {
             videoConstraints={{
               width: 1280,
               height: 720,
-              facingMode: "user"
+              facingMode: isMobile ? "environment" : "user"
             }}
           />
         )}
