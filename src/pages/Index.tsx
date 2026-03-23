@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Leaf, Sparkles, Scan, MessageCircle, Clock, Activity } from 'lucide-react';
+import { Leaf, Sparkles, MessageCircle, Clock, Activity, Zap, Shield } from 'lucide-react';
 import WebcamCapture from '@/components/WebcamCapture';
 import PlantAnalysis from '@/components/PlantAnalysis';
 import AnalysisHistory from '@/components/AnalysisHistory';
@@ -15,7 +15,7 @@ const Index = () => {
   const [analysisCount, setAnalysisCount] = useState(0);
 
   const handleCapture = async (imageSrc: string) => {
-    if (isAnalyzing) return; // prevent concurrent analyses
+    if (isAnalyzing) return;
     setIsAnalyzing(true);
     setCapturedImage(imageSrc);
 
@@ -25,7 +25,6 @@ const Index = () => {
       });
 
       if (error) {
-        // Try to extract error message from response
         let errorMsg = 'Error al analizar la planta';
         try {
           const errBody = error.context;
@@ -46,19 +45,20 @@ const Index = () => {
       setCurrentAnalysis(data);
       setAnalysisCount(prev => prev + 1);
 
-      // Save to database
       await supabase.from('plant_analyses').insert({
         plant_type: data.plant_type,
         health_status: data.health_status,
         confidence: data.confidence,
         diagnosis: data.diagnosis,
         recommendations: data.recommendations,
-        image_url: imageSrc.substring(0, 500), // truncate base64 for storage
+        image_url: imageSrc.substring(0, 500),
         pigmentation_data: data.pigmentation,
         metadata: { issues: data.issues || [] }
       });
 
-      toast.success('¡Análisis completado!');
+      if (data.confidence > 0) {
+        toast.success(`✅ ${data.plant_type} — ${data.health_status}`);
+      }
     } catch (error) {
       console.error('Error:', error);
       toast.error('Error al analizar la planta');
@@ -70,96 +70,107 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b bg-card/80 backdrop-blur-xl">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+      <header className="sticky top-0 z-50 border-b border-border/50 bg-card/90 backdrop-blur-xl">
+        <div className="container mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shadow-lg">
-              <Leaf className="w-5 h-5 text-white" />
+            <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center shadow-lg">
+              <Leaf className="w-4 h-4 text-primary-foreground" />
             </div>
-            <div>
-              <h1 className="text-lg font-bold tracking-tight">Agro Inteligente</h1>
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <Sparkles className="w-3 h-3" />
-                IA en tiempo real
+            <div className="leading-tight">
+              <h1 className="text-base font-bold tracking-tight text-foreground">Agro Inteligente</h1>
+              <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                <Zap className="w-2.5 h-2.5 text-accent" />
+                Diagnóstico IA en tiempo real
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
-              <Activity className="w-3 h-3 text-accent" />
-              {analysisCount} análisis esta sesión
+          <div className="flex items-center gap-2">
+            {analysisCount > 0 && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/60 px-3 py-1.5 rounded-full border border-border/50">
+                <Activity className="w-3 h-3 text-accent" />
+                <span className="font-medium">{analysisCount}</span>
+                <span className="hidden sm:inline">análisis</span>
+              </div>
+            )}
+            <div className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground bg-primary/5 px-3 py-1.5 rounded-full border border-primary/20">
+              <Shield className="w-3 h-3 text-primary" />
+              <span>Gemini AI</span>
             </div>
           </div>
         </div>
       </header>
 
       {/* Main */}
-      <main className="container mx-auto px-4 py-6">
-        <div className="grid lg:grid-cols-5 gap-6">
-          {/* Left: Camera + Analysis (3 cols) */}
-          <div className="lg:col-span-3 space-y-5">
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <Scan className="w-5 h-5 text-primary" />
-                <h2 className="text-lg font-bold">Escaneo de Planta</h2>
-              </div>
-              <p className="text-sm text-muted-foreground mb-4">
-                Enfoca la cámara hacia la planta. Usa <strong>Auto-Scan</strong> para análisis continuo en tiempo real.
-              </p>
+      <main className="container mx-auto px-4 py-5">
+        <div className="grid lg:grid-cols-12 gap-5">
+          {/* Left Column: Camera + Analysis */}
+          <div className="lg:col-span-7 space-y-4">
+            {/* Camera */}
+            <section>
               <WebcamCapture onCapture={handleCapture} isAnalyzing={isAnalyzing} />
-            </div>
+            </section>
 
+            {/* Analysis Result */}
             {currentAnalysis && (
-              <div>
-                <h2 className="text-lg font-bold mb-3">Resultado del Análisis</h2>
+              <section className="animate-fade-in">
                 <PlantAnalysis analysis={currentAnalysis} capturedImage={capturedImage} />
-              </div>
+              </section>
             )}
           </div>
 
-          {/* Right: Tabs (2 cols) */}
-          <div className="lg:col-span-2">
-            <Tabs defaultValue="history" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 rounded-xl h-11">
-                <TabsTrigger value="history" className="rounded-lg text-xs sm:text-sm flex items-center gap-1.5">
-                  <Clock className="w-4 h-4" />
-                  Historial
-                </TabsTrigger>
-                <TabsTrigger value="chat" className="rounded-lg text-xs sm:text-sm flex items-center gap-1.5">
-                  <MessageCircle className="w-4 h-4" />
-                  Chat Experto
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="history" className="mt-4">
-                <div className="bg-card rounded-2xl border border-border p-4">
-                  <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-primary" />
-                    Análisis Recientes
-                  </h3>
-                  <AnalysisHistory />
-                </div>
-              </TabsContent>
-              <TabsContent value="chat" className="mt-4">
-                <div className="bg-card rounded-2xl border border-border overflow-hidden">
-                  <div className="px-4 py-3 border-b bg-primary/5">
-                    <h3 className="font-bold text-sm flex items-center gap-2">
-                      <MessageCircle className="w-4 h-4 text-primary" />
-                      Chat con Experto IA
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">Consultas sobre cuidados y diagnósticos</p>
+          {/* Right Column: Tabs */}
+          <div className="lg:col-span-5">
+            <div className="lg:sticky lg:top-20">
+              <Tabs defaultValue="history" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 h-10 rounded-xl bg-muted/60 p-1">
+                  <TabsTrigger value="history" className="rounded-lg text-xs font-medium flex items-center gap-1.5 data-[state=active]:bg-card data-[state=active]:shadow-sm">
+                    <Clock className="w-3.5 h-3.5" />
+                    Historial
+                  </TabsTrigger>
+                  <TabsTrigger value="chat" className="rounded-lg text-xs font-medium flex items-center gap-1.5 data-[state=active]:bg-card data-[state=active]:shadow-sm">
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    Chat IA
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="history" className="mt-3">
+                  <div className="bg-card rounded-2xl border border-border/50 shadow-soft overflow-hidden">
+                    <div className="px-4 py-3 border-b border-border/50 bg-muted/30">
+                      <h3 className="font-semibold text-sm flex items-center gap-2 text-foreground">
+                        <Clock className="w-4 h-4 text-primary" />
+                        Análisis Recientes
+                      </h3>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">Actualización en tiempo real</p>
+                    </div>
+                    <div className="p-3">
+                      <AnalysisHistory />
+                    </div>
                   </div>
-                  <ExpertChat />
-                </div>
-              </TabsContent>
-            </Tabs>
+                </TabsContent>
+
+                <TabsContent value="chat" className="mt-3">
+                  <div className="bg-card rounded-2xl border border-border/50 shadow-soft overflow-hidden">
+                    <div className="px-4 py-3 border-b border-border/50 bg-muted/30">
+                      <h3 className="font-semibold text-sm flex items-center gap-2 text-foreground">
+                        <Sparkles className="w-4 h-4 text-primary" />
+                        Experto Agrónomo IA
+                      </h3>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">Consultas sobre cuidados y diagnósticos</p>
+                    </div>
+                    <ExpertChat />
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
           </div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="border-t mt-12 py-4 bg-card/30">
-        <div className="container mx-auto px-4 text-center text-xs text-muted-foreground">
-          Agro Inteligente — Sistema de diagnóstico de plantas con inteligencia artificial
+      <footer className="border-t border-border/30 mt-8 py-3">
+        <div className="container mx-auto px-4 flex items-center justify-center gap-2 text-[10px] text-muted-foreground">
+          <Leaf className="w-3 h-3" />
+          Agro Inteligente — Diagnóstico de plantas con inteligencia artificial
         </div>
       </footer>
     </div>
