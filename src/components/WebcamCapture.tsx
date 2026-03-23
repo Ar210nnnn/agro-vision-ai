@@ -14,7 +14,7 @@ const WebcamCapture = ({ onCapture, isAnalyzing }: WebcamCaptureProps) => {
   const webcamRef = useRef<Webcam>(null);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [autoScan, setAutoScan] = useState(false);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isMobile = useIsMobile();
 
   const handleUserMedia = useCallback(() => {
