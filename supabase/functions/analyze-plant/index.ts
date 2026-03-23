@@ -3,7 +3,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 serve(async (req) => {
@@ -25,7 +25,6 @@ serve(async (req) => {
 
     console.log('Analizando planta con IA...');
 
-    // Llamar a Lovable AI con Gemini Vision
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -37,34 +36,44 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `Eres un experto agrónomo especializado en diagnóstico de plantas. Analiza la imagen de la planta proporcionada y proporciona:
+            content: `Eres un experto agrónomo. Analiza la imagen y responde SIEMPRE en JSON válido con esta estructura exacta, sin texto adicional:
 
-1. Tipo de planta (nombre común y científico si es posible)
-2. Estado de salud (Saludable, Necesita atención, Enferma, Crítica)
-3. Análisis de pigmentación (color de hojas, indicadores visuales)
-4. Diagnóstico detallado
-5. Recomendaciones específicas
-
-Responde SOLO en formato JSON con esta estructura:
+Si hay una planta visible:
 {
   "plant_type": "Nombre de la planta",
-  "health_status": "Estado de salud",
-  "confidence": 95,
+  "health_status": "Saludable|Necesita atención|Enferma|Crítica",
+  "confidence": 85,
   "pigmentation": {
     "leaf_color": "descripción del color",
     "indicators": ["indicador1", "indicador2"]
   },
   "diagnosis": "Diagnóstico detallado",
   "recommendations": "Recomendaciones específicas",
-  "issues": ["problema1", "problema2"] o []
-}`
+  "issues": ["problema1"] 
+}
+
+Si NO hay planta visible:
+{
+  "plant_type": "No se detectó planta",
+  "health_status": "No aplica",
+  "confidence": 0,
+  "pigmentation": {
+    "leaf_color": "N/A",
+    "indicators": []
+  },
+  "diagnosis": "No se detectó ninguna planta en la imagen. Por favor enfoca una planta para obtener un diagnóstico.",
+  "recommendations": "Asegúrate de enfocar directamente una planta con buena iluminación.",
+  "issues": []
+}
+
+IMPORTANTE: Responde SOLO con el JSON, sin markdown, sin backticks, sin texto antes o después.`
           },
           {
             role: 'user',
             content: [
               {
                 type: 'text',
-                text: 'Analiza esta planta y proporciona un diagnóstico completo.'
+                text: 'Analiza lo que ves en esta imagen. Si hay una planta, diagnostícala. Si no hay planta, indícalo.'
               },
               {
                 type: 'image_url',
@@ -75,19 +84,23 @@ Responde SOLO en formato JSON con esta estructura:
             ]
           }
         ],
-        temperature: 0.7,
+        temperature: 0.3,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Error de Lovable AI:', response.status, errorText);
+      console.error('Error de AI:', response.status, errorText);
       
       if (response.status === 429) {
-        throw new Error('Límite de solicitudes excedido. Por favor, intenta de nuevo en unos momentos.');
+        return new Response(JSON.stringify({ error: 'Límite de solicitudes excedido. Intenta de nuevo en unos momentos.' }), {
+          status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
       }
       if (response.status === 402) {
-        throw new Error('Se requiere pago. Por favor, añade fondos a tu espacio de trabajo de Lovable AI.');
+        return new Response(JSON.stringify({ error: 'Créditos agotados. Añade fondos en Configuración > Workspace > Uso.' }), {
+          status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
       }
       
       throw new Error(`Error del gateway de IA: ${response.status}`);
@@ -100,33 +113,46 @@ Responde SOLO en formato JSON con esta estructura:
       throw new Error('No se recibió respuesta de la IA');
     }
 
-    console.log('Respuesta de IA recibida:', aiResponse);
+    console.log('Respuesta de IA recibida:', aiResponse.substring(0, 200));
 
-    // Extraer JSON de la respuesta
+    // Parse JSON robustly
     let analysisData;
     try {
-      // Intentar parsear directamente
-      analysisData = JSON.parse(aiResponse);
+      analysisData = JSON.parse(aiResponse.trim());
     } catch {
-      // Si falla, intentar extraer JSON del texto
-      const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+      // Try extracting JSON from markdown code blocks or text
+      const jsonMatch = aiResponse.match(/```(?:json)?\s*([\s\S]*?)```/) || aiResponse.match(/(\{[\s\S]*\})/);
       if (jsonMatch) {
-        analysisData = JSON.parse(jsonMatch[0]);
+        try {
+          analysisData = JSON.parse(jsonMatch[1].trim());
+        } catch {
+          // AI didn't return JSON at all - create a fallback response
+          analysisData = {
+            plant_type: "No se pudo analizar",
+            health_status: "Indeterminado",
+            confidence: 0,
+            pigmentation: { leaf_color: "N/A", indicators: [] },
+            diagnosis: aiResponse.substring(0, 500),
+            recommendations: "Intenta capturar la imagen nuevamente con mejor iluminación y enfocando directamente la planta.",
+            issues: []
+          };
+        }
       } else {
-        throw new Error('No se pudo extraer el análisis de la respuesta de IA');
+        analysisData = {
+          plant_type: "No se pudo analizar",
+          health_status: "Indeterminado",
+          confidence: 0,
+          pigmentation: { leaf_color: "N/A", indicators: [] },
+          diagnosis: aiResponse.substring(0, 500),
+          recommendations: "Intenta capturar la imagen nuevamente con mejor iluminación y enfocando directamente la planta.",
+          issues: []
+        };
       }
     }
 
-    console.log('Análisis completado:', analysisData);
-
     return new Response(
       JSON.stringify(analysisData),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
