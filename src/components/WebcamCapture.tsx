@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import Webcam from 'react-webcam';
-import { Camera, Loader2, Scan, Wifi, WifiOff } from 'lucide-react';
+import { Camera, Loader2, Scan, Wifi, WifiOff, Play, Pause } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -12,13 +13,13 @@ interface WebcamCaptureProps {
 const WebcamCapture = ({ onCapture, isAnalyzing }: WebcamCaptureProps) => {
   const webcamRef = useRef<Webcam>(null);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isMobile = useIsMobile();
   const [scanCount, setScanCount] = useState(0);
+  const [isPaused, setIsPaused] = useState(true);
 
   const handleUserMedia = useCallback(() => {
     setHasPermission(true);
-    toast.success('Cámara conectada — escaneo automático iniciado');
+    toast.success('Cámara conectada');
   }, []);
 
   const handleUserMediaError = useCallback(() => {
@@ -34,16 +35,15 @@ const WebcamCapture = ({ onCapture, isAnalyzing }: WebcamCaptureProps) => {
     }
   }, [onCapture]);
 
-  // Auto-scan: starts automatically when camera is ready, pauses during analysis
+  // Auto-scan only when not paused
   useEffect(() => {
-    if (hasPermission && !isAnalyzing) {
-      // Wait 2 seconds then capture
+    if (hasPermission && !isAnalyzing && !isPaused) {
       const timeout = setTimeout(() => {
         capture();
       }, 2500);
       return () => clearTimeout(timeout);
     }
-  }, [hasPermission, isAnalyzing, capture, scanCount]);
+  }, [hasPermission, isAnalyzing, capture, scanCount, isPaused]);
 
   return (
     <div className="relative rounded-2xl overflow-hidden bg-black shadow-card group">
@@ -58,6 +58,11 @@ const WebcamCapture = ({ onCapture, isAnalyzing }: WebcamCaptureProps) => {
             <div className="flex items-center gap-1.5 bg-accent/90 backdrop-blur-md text-accent-foreground px-3 py-1.5 rounded-full text-xs font-bold">
               <Loader2 className="w-3 h-3 animate-spin" />
               ANALIZANDO...
+            </div>
+          ) : isPaused ? (
+            <div className="flex items-center gap-1.5 bg-muted/80 backdrop-blur-md text-muted-foreground px-3 py-1.5 rounded-full text-xs font-medium">
+              <Pause className="w-3 h-3" />
+              PAUSADO
             </div>
           ) : (
             <div className="flex items-center gap-1.5 bg-primary/80 backdrop-blur-md text-primary-foreground px-3 py-1.5 rounded-full text-xs font-medium">
@@ -76,7 +81,7 @@ const WebcamCapture = ({ onCapture, isAnalyzing }: WebcamCaptureProps) => {
       )}
 
       {/* Scanning overlay animation */}
-      {hasPermission && !isAnalyzing && (
+      {hasPermission && !isAnalyzing && !isPaused && (
         <div className="absolute inset-0 z-10 pointer-events-none">
           <div className="absolute inset-6 border-2 border-accent/40 rounded-xl" />
           {/* Scanning line */}
@@ -141,9 +146,20 @@ const WebcamCapture = ({ onCapture, isAnalyzing }: WebcamCaptureProps) => {
       {/* Bottom status bar */}
       {hasPermission && (
         <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/70 to-transparent p-4">
-          <div className="flex items-center justify-center gap-2 text-white/80 text-xs">
-            <Wifi className="w-3 h-3" />
-            <span>Escaneo automático activo — enfoca una planta para diagnosticarla</span>
+          <div className="flex items-center justify-center gap-3">
+            <Button
+              size="sm"
+              variant={isPaused ? "default" : "secondary"}
+              className="rounded-full px-4 gap-2"
+              onClick={() => setIsPaused(prev => !prev)}
+              disabled={isAnalyzing}
+            >
+              {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+              {isPaused ? 'Iniciar escaneo' : 'Pausar'}
+            </Button>
+            <span className="text-white/60 text-xs">
+              {isPaused ? 'Presiona para iniciar el auto-scan' : 'Escaneando automáticamente...'}
+            </span>
           </div>
         </div>
       )}
