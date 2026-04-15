@@ -59,6 +59,11 @@ const WebcamCapture = ({ onCapture, isAnalyzing }: WebcamCaptureProps) => {
               <Loader2 className="w-3 h-3 animate-spin" />
               ANALIZANDO...
             </div>
+          ) : isPaused ? (
+            <div className="flex items-center gap-1.5 bg-muted/80 backdrop-blur-md text-muted-foreground px-3 py-1.5 rounded-full text-xs font-medium">
+              <Pause className="w-3 h-3" />
+              PAUSADO
+            </div>
           ) : (
             <div className="flex items-center gap-1.5 bg-primary/80 backdrop-blur-md text-primary-foreground px-3 py-1.5 rounded-full text-xs font-medium">
               <Scan className="w-3 h-3" />
