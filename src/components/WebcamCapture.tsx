@@ -146,9 +146,20 @@ const WebcamCapture = ({ onCapture, isAnalyzing }: WebcamCaptureProps) => {
       {/* Bottom status bar */}
       {hasPermission && (
         <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/70 to-transparent p-4">
-          <div className="flex items-center justify-center gap-2 text-white/80 text-xs">
-            <Wifi className="w-3 h-3" />
-            <span>Escaneo automático activo — enfoca una planta para diagnosticarla</span>
+          <div className="flex items-center justify-center gap-3">
+            <Button
+              size="sm"
+              variant={isPaused ? "default" : "secondary"}
+              className="rounded-full px-4 gap-2"
+              onClick={() => setIsPaused(prev => !prev)}
+              disabled={isAnalyzing}
+            >
+              {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+              {isPaused ? 'Iniciar escaneo' : 'Pausar'}
+            </Button>
+            <span className="text-white/60 text-xs">
+              {isPaused ? 'Presiona para iniciar el auto-scan' : 'Escaneando automáticamente...'}
+            </span>
           </div>
         </div>
       )}
