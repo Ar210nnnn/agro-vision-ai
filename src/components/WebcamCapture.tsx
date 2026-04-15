@@ -12,13 +12,13 @@ interface WebcamCaptureProps {
 const WebcamCapture = ({ onCapture, isAnalyzing }: WebcamCaptureProps) => {
   const webcamRef = useRef<Webcam>(null);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isMobile = useIsMobile();
   const [scanCount, setScanCount] = useState(0);
+  const [isPaused, setIsPaused] = useState(true);
 
   const handleUserMedia = useCallback(() => {
     setHasPermission(true);
-    toast.success('Cámara conectada — escaneo automático iniciado');
+    toast.success('Cámara conectada');
   }, []);
 
   const handleUserMediaError = useCallback(() => {
@@ -34,16 +34,15 @@ const WebcamCapture = ({ onCapture, isAnalyzing }: WebcamCaptureProps) => {
     }
   }, [onCapture]);
 
-  // Auto-scan: starts automatically when camera is ready, pauses during analysis
+  // Auto-scan only when not paused
   useEffect(() => {
-    if (hasPermission && !isAnalyzing) {
-      // Wait 2 seconds then capture
+    if (hasPermission && !isAnalyzing && !isPaused) {
       const timeout = setTimeout(() => {
         capture();
       }, 2500);
       return () => clearTimeout(timeout);
     }
-  }, [hasPermission, isAnalyzing, capture, scanCount]);
+  }, [hasPermission, isAnalyzing, capture, scanCount, isPaused]);
 
   return (
     <div className="relative rounded-2xl overflow-hidden bg-black shadow-card group">
