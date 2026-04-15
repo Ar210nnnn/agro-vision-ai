@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import Webcam from 'react-webcam';
-import { Camera, Loader2, Scan, Wifi, WifiOff } from 'lucide-react';
+import { Camera, Loader2, Scan, Wifi, WifiOff, Play, Pause } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 
