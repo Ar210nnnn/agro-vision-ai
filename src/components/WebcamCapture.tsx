@@ -81,7 +81,7 @@ const WebcamCapture = ({ onCapture, isAnalyzing }: WebcamCaptureProps) => {
       )}
 
       {/* Scanning overlay animation */}
-      {hasPermission && !isAnalyzing && (
+      {hasPermission && !isAnalyzing && !isPaused && (
         <div className="absolute inset-0 z-10 pointer-events-none">
           <div className="absolute inset-6 border-2 border-accent/40 rounded-xl" />
           {/* Scanning line */}
