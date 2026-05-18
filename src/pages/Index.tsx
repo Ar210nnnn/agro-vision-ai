@@ -206,6 +206,21 @@ const Index = () => {
                   </div>
                 </TabsContent>
 
+                <TabsContent value="climate" className="mt-3">
+                  <div className="bg-card/80 backdrop-blur-sm rounded-2xl border border-border/50 shadow-soft overflow-hidden">
+                    <div className="px-4 py-3 border-b border-border/50 bg-gradient-to-r from-blue-500/10 to-cyan-500/5">
+                      <h3 className="font-semibold text-sm flex items-center gap-2 text-foreground">
+                        <CloudRain className="w-4 h-4 text-blue-500" />
+                        Clima & Riesgos Predictivos
+                      </h3>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">Datos meteorológicos en vivo de tu zona</p>
+                    </div>
+                    <div className="p-3">
+                      <ClimateWidget currentDiagnosis={currentAnalysis} />
+                    </div>
+                  </div>
+                </TabsContent>
+
                 <TabsContent value="history" className="mt-3">
                   <div className="bg-card/80 backdrop-blur-sm rounded-2xl border border-border/50 shadow-soft overflow-hidden">
                     <div className="px-4 py-3 border-b border-border/50 bg-gradient-to-r from-primary/5 to-accent/5">
