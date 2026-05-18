@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Leaf, Sparkles, MessageCircle, Clock, Activity, Zap, Shield, BarChart3, Cpu } from 'lucide-react';
+import { Leaf, Sparkles, MessageCircle, Clock, Activity, Zap, Shield, BarChart3, Cpu, CloudRain } from 'lucide-react';
+import ClimateWidget from '@/components/ClimateWidget';
 import WebcamCapture from '@/components/WebcamCapture';
 import PlantAnalysis from '@/components/PlantAnalysis';
 import AnalysisHistory from '@/components/AnalysisHistory';
@@ -171,18 +172,22 @@ const Index = () => {
           <div className="lg:col-span-5">
             <div className="lg:sticky lg:top-20">
               <Tabs defaultValue="stats" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 h-11 rounded-2xl bg-muted/60 p-1 backdrop-blur-sm">
-                  <TabsTrigger value="stats" className="rounded-xl text-xs font-medium flex items-center gap-1.5 data-[state=active]:bg-card data-[state=active]:shadow-sm">
+                <TabsList className="grid w-full grid-cols-4 h-11 rounded-2xl bg-muted/60 p-1 backdrop-blur-sm">
+                  <TabsTrigger value="stats" className="rounded-xl text-[11px] font-medium flex items-center gap-1 data-[state=active]:bg-card data-[state=active]:shadow-sm">
                     <BarChart3 className="w-3.5 h-3.5" />
                     Stats
                   </TabsTrigger>
-                  <TabsTrigger value="history" className="rounded-xl text-xs font-medium flex items-center gap-1.5 data-[state=active]:bg-card data-[state=active]:shadow-sm">
+                  <TabsTrigger value="climate" className="rounded-xl text-[11px] font-medium flex items-center gap-1 data-[state=active]:bg-card data-[state=active]:shadow-sm">
+                    <CloudRain className="w-3.5 h-3.5" />
+                    Clima
+                  </TabsTrigger>
+                  <TabsTrigger value="history" className="rounded-xl text-[11px] font-medium flex items-center gap-1 data-[state=active]:bg-card data-[state=active]:shadow-sm">
                     <Clock className="w-3.5 h-3.5" />
                     Historial
                   </TabsTrigger>
-                  <TabsTrigger value="chat" className="rounded-xl text-xs font-medium flex items-center gap-1.5 data-[state=active]:bg-card data-[state=active]:shadow-sm">
+                  <TabsTrigger value="chat" className="rounded-xl text-[11px] font-medium flex items-center gap-1 data-[state=active]:bg-card data-[state=active]:shadow-sm">
                     <MessageCircle className="w-3.5 h-3.5" />
-                    Chat IA
+                    Chat
                   </TabsTrigger>
                 </TabsList>
 
@@ -197,6 +202,21 @@ const Index = () => {
                     </div>
                     <div className="p-3">
                       <StatsDashboard />
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="climate" className="mt-3">
+                  <div className="bg-card/80 backdrop-blur-sm rounded-2xl border border-border/50 shadow-soft overflow-hidden">
+                    <div className="px-4 py-3 border-b border-border/50 bg-gradient-to-r from-blue-500/10 to-cyan-500/5">
+                      <h3 className="font-semibold text-sm flex items-center gap-2 text-foreground">
+                        <CloudRain className="w-4 h-4 text-blue-500" />
+                        Clima & Riesgos Predictivos
+                      </h3>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">Datos meteorológicos en vivo de tu zona</p>
+                    </div>
+                    <div className="p-3">
+                      <ClimateWidget currentDiagnosis={currentAnalysis} />
                     </div>
                   </div>
                 </TabsContent>

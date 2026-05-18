@@ -36,7 +36,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `Eres un experto agrónomo. Analiza la imagen y responde SIEMPRE en JSON válido con esta estructura exacta, sin texto adicional:
+            content: `Eres un experto agrónomo con visión computacional. Analiza la imagen y responde SIEMPRE en JSON válido con esta estructura exacta, sin texto adicional:
 
 Si hay una planta visible:
 {
@@ -49,8 +49,21 @@ Si hay una planta visible:
   },
   "diagnosis": "Diagnóstico detallado",
   "recommendations": "Recomendaciones específicas",
-  "issues": ["problema1"] 
+  "issues": ["problema1"],
+  "detections": [
+    { "label": "Hoja con clorosis", "severity": "high|medium|low", "box": { "x": 0.12, "y": 0.30, "w": 0.20, "h": 0.25 } }
+  ],
+  "climate_risks": [
+    { "condition": "Mildiu", "trigger": "Humedad >80% + temp 15-25°C", "level": "high|medium|low" }
+  ],
+  "environment_ideal": { "temp_c": "18-26", "humidity_pct": "50-70", "light": "luz indirecta brillante" }
 }
+
+REGLAS DETECCIONES:
+- box coords NORMALIZADAS 0-1 (x,y esquina superior izq; w,h ancho/alto)
+- Incluye 1-5 detecciones máximas marcando zonas afectadas, plagas visibles, frutos, o áreas saludables clave
+- severity refleja gravedad visual
+- Si la planta está sana, igualmente marca 1-2 zonas con label "Hoja saludable" severity "low"
 
 Si NO hay planta visible:
 {
