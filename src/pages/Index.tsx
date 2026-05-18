@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Leaf, Sparkles, MessageCircle, Clock, Activity, Zap, Shield, BarChart3, Cpu } from 'lucide-react';
+import { Leaf, Sparkles, MessageCircle, Clock, Activity, Zap, Shield, BarChart3, Cpu, CloudRain } from 'lucide-react';
+import ClimateWidget from '@/components/ClimateWidget';
 import WebcamCapture from '@/components/WebcamCapture';
 import PlantAnalysis from '@/components/PlantAnalysis';
 import AnalysisHistory from '@/components/AnalysisHistory';
