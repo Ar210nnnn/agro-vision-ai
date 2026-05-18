@@ -172,18 +172,22 @@ const Index = () => {
           <div className="lg:col-span-5">
             <div className="lg:sticky lg:top-20">
               <Tabs defaultValue="stats" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 h-11 rounded-2xl bg-muted/60 p-1 backdrop-blur-sm">
-                  <TabsTrigger value="stats" className="rounded-xl text-xs font-medium flex items-center gap-1.5 data-[state=active]:bg-card data-[state=active]:shadow-sm">
+                <TabsList className="grid w-full grid-cols-4 h-11 rounded-2xl bg-muted/60 p-1 backdrop-blur-sm">
+                  <TabsTrigger value="stats" className="rounded-xl text-[11px] font-medium flex items-center gap-1 data-[state=active]:bg-card data-[state=active]:shadow-sm">
                     <BarChart3 className="w-3.5 h-3.5" />
                     Stats
                   </TabsTrigger>
-                  <TabsTrigger value="history" className="rounded-xl text-xs font-medium flex items-center gap-1.5 data-[state=active]:bg-card data-[state=active]:shadow-sm">
+                  <TabsTrigger value="climate" className="rounded-xl text-[11px] font-medium flex items-center gap-1 data-[state=active]:bg-card data-[state=active]:shadow-sm">
+                    <CloudRain className="w-3.5 h-3.5" />
+                    Clima
+                  </TabsTrigger>
+                  <TabsTrigger value="history" className="rounded-xl text-[11px] font-medium flex items-center gap-1 data-[state=active]:bg-card data-[state=active]:shadow-sm">
                     <Clock className="w-3.5 h-3.5" />
                     Historial
                   </TabsTrigger>
-                  <TabsTrigger value="chat" className="rounded-xl text-xs font-medium flex items-center gap-1.5 data-[state=active]:bg-card data-[state=active]:shadow-sm">
+                  <TabsTrigger value="chat" className="rounded-xl text-[11px] font-medium flex items-center gap-1 data-[state=active]:bg-card data-[state=active]:shadow-sm">
                     <MessageCircle className="w-3.5 h-3.5" />
-                    Chat IA
+                    Chat
                   </TabsTrigger>
                 </TabsList>
 
