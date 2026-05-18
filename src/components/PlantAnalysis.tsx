@@ -150,6 +150,40 @@ const PlantAnalysis = ({ analysis, capturedImage }: PlantAnalysisProps) => {
         </h4>
         <p className="text-sm text-muted-foreground leading-relaxed">{analysis.recommendations}</p>
       </div>
+
+      {/* Climate Risks (AI predictive) */}
+      {analysis.climate_risks && analysis.climate_risks.length > 0 && (
+        <div className="bg-card rounded-xl p-4 border border-border">
+          <h4 className="font-semibold text-sm flex items-center gap-2 mb-3">
+            <CloudRain className="w-4 h-4 text-blue-500" />
+            Riesgos climáticos predictivos
+          </h4>
+          <div className="space-y-2">
+            {analysis.climate_risks.map((r, i) => {
+              const lvl = r.level?.toLowerCase();
+              const lc = lvl === 'high' ? 'border-red-500/40 bg-red-500/5 text-red-600'
+                : lvl === 'medium' ? 'border-amber-500/40 bg-amber-500/5 text-amber-700'
+                : 'border-emerald-500/40 bg-emerald-500/5 text-emerald-700';
+              return (
+                <div key={i} className={`rounded-lg border p-2.5 ${lc}`}>
+                  <div className="flex items-center justify-between mb-0.5">
+                    <span className="font-semibold text-xs">{r.condition}</span>
+                    <Badge variant="outline" className="text-[9px] uppercase">{r.level}</Badge>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">{r.trigger}</p>
+                </div>
+              );
+            })}
+          </div>
+          {analysis.environment_ideal && (
+            <div className="mt-3 pt-3 border-t border-border grid grid-cols-3 gap-2 text-[10px]">
+              <div><span className="text-muted-foreground">Temp ideal:</span> <strong>{analysis.environment_ideal.temp_c}°C</strong></div>
+              <div><span className="text-muted-foreground">Humedad:</span> <strong>{analysis.environment_ideal.humidity_pct}%</strong></div>
+              <div><span className="text-muted-foreground">Luz:</span> <strong>{analysis.environment_ideal.light}</strong></div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
