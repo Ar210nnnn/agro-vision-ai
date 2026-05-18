@@ -1,26 +1,32 @@
-import { CheckCircle2, AlertTriangle, Droplets, Bug, Thermometer, Share2, Leaf } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, Bug, Thermometer, Share2, Leaf, CloudRain, Eye, EyeOff, Target } from 'lucide-react';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
+import DetectionOverlay from './DetectionOverlay';
+
+interface Detection { label: string; severity: string; box: { x: number; y: number; w: number; h: number } }
+interface ClimateRisk { condition: string; trigger: string; level: string }
 
 interface PlantAnalysisProps {
   analysis: {
     plant_type: string;
     health_status: string;
     confidence: number;
-    pigmentation?: {
-      leaf_color: string;
-      indicators: string[];
-    };
+    pigmentation?: { leaf_color: string; indicators: string[] };
     diagnosis: string;
     recommendations: string;
     issues?: string[];
+    detections?: Detection[];
+    climate_risks?: ClimateRisk[];
+    environment_ideal?: { temp_c: string; humidity_pct: string; light: string };
   };
   capturedImage?: string;
 }
 
 const PlantAnalysis = ({ analysis, capturedImage }: PlantAnalysisProps) => {
+  const [showOverlay, setShowOverlay] = useState(true);
   const handleShare = async () => {
     try {
       const shareText = `🌱 ${analysis.plant_type}\n\nEstado: ${analysis.health_status}\nConfianza: ${analysis.confidence}%\n\nDiagnóstico: ${analysis.diagnosis}\n\nRecomendaciones: ${analysis.recommendations}`;
