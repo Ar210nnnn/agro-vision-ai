@@ -51,25 +51,43 @@ const PlantAnalysis = ({ analysis, capturedImage }: PlantAnalysisProps) => {
 
   return (
     <div className="space-y-4 animate-fade-in">
-      {/* Header with image */}
-      <div className="relative rounded-2xl overflow-hidden border border-border">
+      {/* Header with image + detection overlay */}
+      <div className="relative rounded-2xl overflow-hidden border border-border bg-black">
         {capturedImage && (
-          <img src={capturedImage} alt="Planta" className="w-full h-48 object-cover" />
+          showOverlay ? (
+            <DetectionOverlay imageSrc={capturedImage} detections={analysis.detections} />
+          ) : (
+            <img src={capturedImage} alt="Planta" className="w-full h-auto block" />
+          )
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-white font-bold text-lg">{analysis.plant_type}</h3>
-              <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border mt-1 ${statusConfig.color}`}>
-                {statusConfig.icon}
-                {analysis.health_status}
-              </div>
-            </div>
-            <Button onClick={handleShare} variant="ghost" size="icon" className="text-white hover:bg-white/20">
-              <Share2 className="w-5 h-5" />
+        <div className="absolute top-2 right-2 flex gap-2 z-10">
+          {analysis.detections && analysis.detections.length > 0 && (
+            <Button
+              onClick={() => setShowOverlay(v => !v)}
+              variant="secondary"
+              size="sm"
+              className="h-8 gap-1.5 bg-black/60 backdrop-blur-md text-white hover:bg-black/80 border-0"
+            >
+              {showOverlay ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              {showOverlay ? 'Ocultar' : 'Ver'} IA
             </Button>
+          )}
+          <Button onClick={handleShare} variant="secondary" size="icon" className="h-8 w-8 bg-black/60 backdrop-blur-md text-white hover:bg-black/80 border-0">
+            <Share2 className="w-4 h-4" />
+          </Button>
+        </div>
+        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent pointer-events-none">
+          <h3 className="text-white font-bold text-lg drop-shadow">{analysis.plant_type}</h3>
+          <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border mt-1 ${statusConfig.color}`}>
+            {statusConfig.icon}
+            {analysis.health_status}
           </div>
+          {analysis.detections && analysis.detections.length > 0 && (
+            <div className="inline-flex items-center gap-1.5 ml-2 px-2.5 py-1 rounded-full text-[10px] font-bold bg-accent/90 text-accent-foreground">
+              <Target className="w-3 h-3" />
+              {analysis.detections.length} zona{analysis.detections.length > 1 ? 's' : ''} detectada{analysis.detections.length > 1 ? 's' : ''}
+            </div>
+          )}
         </div>
       </div>
 
