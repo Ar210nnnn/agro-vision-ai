@@ -16,16 +16,32 @@ const WebcamCapture = ({ onCapture, isAnalyzing }: WebcamCaptureProps) => {
   const isMobile = useIsMobile();
   const [scanCount, setScanCount] = useState(0);
   const [isPaused, setIsPaused] = useState(true);
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>(isMobile ? 'environment' : 'user');
+  const [camKey, setCamKey] = useState(0);
 
   const handleUserMedia = useCallback(() => {
     setHasPermission(true);
     toast.success('Cámara conectada');
   }, []);
 
-  const handleUserMediaError = useCallback(() => {
+  const handleUserMediaError = useCallback((err: string | DOMException) => {
+    console.error('Camera error:', err);
+    // If environment camera fails, try user camera as fallback
+    if (facingMode === 'environment') {
+      toast.message('Cámara trasera no disponible, usando frontal');
+      setFacingMode('user');
+      setCamKey(k => k + 1);
+      return;
+    }
     setHasPermission(false);
-    toast.error('No se pudo acceder a la cámara. Verifica los permisos.');
-  }, []);
+    toast.error('No se pudo acceder a la cámara. Verifica los permisos del navegador.');
+  }, [facingMode]);
+
+  const switchCamera = () => {
+    setFacingMode(f => (f === 'environment' ? 'user' : 'environment'));
+    setHasPermission(null);
+    setCamKey(k => k + 1);
+  };
 
   const capture = useCallback(() => {
     const imageSrc = webcamRef.current?.getScreenshot();
@@ -128,17 +144,22 @@ const WebcamCapture = ({ onCapture, isAnalyzing }: WebcamCaptureProps) => {
           </div>
         ) : null}
         <Webcam
+          key={camKey}
           ref={webcamRef}
           audio={false}
+          muted
+          playsInline
+          mirrored={facingMode === 'user'}
           screenshotFormat="image/jpeg"
-          screenshotQuality={0.8}
-          className={`w-full h-full object-cover ${hasPermission === null || hasPermission === false ? 'invisible' : ''}`}
+          screenshotQuality={0.85}
+          forceScreenshotSourceSize
+          className={`absolute inset-0 w-full h-full object-cover ${hasPermission ? '' : 'invisible'}`}
           onUserMedia={handleUserMedia}
           onUserMediaError={handleUserMediaError}
           videoConstraints={{
             width: { ideal: 1280 },
             height: { ideal: 720 },
-            facingMode: isMobile ? { exact: "environment" } : "user"
+            facingMode: { ideal: facingMode },
           }}
         />
       </div>
@@ -157,9 +178,17 @@ const WebcamCapture = ({ onCapture, isAnalyzing }: WebcamCaptureProps) => {
               {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
               {isPaused ? 'Iniciar escaneo' : 'Pausar'}
             </Button>
-            <span className="text-white/60 text-xs">
-              {isPaused ? 'Presiona para iniciar el auto-scan' : 'Escaneando automáticamente...'}
-            </span>
+            <Button
+              size="sm"
+              variant="secondary"
+              className="rounded-full px-3 gap-1.5"
+              onClick={switchCamera}
+              disabled={isAnalyzing}
+              title="Cambiar cámara"
+            >
+              <Camera className="w-4 h-4" />
+              {facingMode === 'environment' ? 'Trasera' : 'Frontal'}
+            </Button>
           </div>
         </div>
       )}
