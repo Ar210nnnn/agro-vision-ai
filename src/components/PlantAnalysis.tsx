@@ -1,10 +1,11 @@
-import { CheckCircle2, AlertTriangle, Bug, Thermometer, Share2, Leaf, CloudRain, Eye, EyeOff, Target } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, Bug, Thermometer, Share2, Leaf, CloudRain, Eye, EyeOff, Target, FileDown, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
 import DetectionOverlay from './DetectionOverlay';
+import { generatePlantReport } from '@/lib/generateReport';
 
 interface Detection { label: string; severity: string; box: { x: number; y: number; w: number; h: number } }
 interface ClimateRisk { condition: string; trigger: string; level: string }
@@ -27,6 +28,7 @@ interface PlantAnalysisProps {
 
 const PlantAnalysis = ({ analysis, capturedImage }: PlantAnalysisProps) => {
   const [showOverlay, setShowOverlay] = useState(true);
+  const [generating, setGenerating] = useState(false);
   const handleShare = async () => {
     try {
       const shareText = `🌱 ${analysis.plant_type}\n\nEstado: ${analysis.health_status}\nConfianza: ${analysis.confidence}%\n\nDiagnóstico: ${analysis.diagnosis}\n\nRecomendaciones: ${analysis.recommendations}`;
@@ -37,6 +39,19 @@ const PlantAnalysis = ({ analysis, capturedImage }: PlantAnalysisProps) => {
         toast.success('Copiado al portapapeles');
       }
     } catch { /* user cancelled */ }
+  };
+
+  const handleDownloadPDF = async () => {
+    try {
+      setGenerating(true);
+      await generatePlantReport(analysis, capturedImage);
+      toast.success('Reporte PDF descargado');
+    } catch (e) {
+      console.error(e);
+      toast.error('No se pudo generar el PDF');
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const getStatusConfig = (status: string) => {
@@ -72,6 +87,10 @@ const PlantAnalysis = ({ analysis, capturedImage }: PlantAnalysisProps) => {
               {showOverlay ? 'Ocultar' : 'Ver'} IA
             </Button>
           )}
+          <Button onClick={handleDownloadPDF} disabled={generating} variant="secondary" size="sm" className="h-8 gap-1.5 bg-black/60 backdrop-blur-md text-white hover:bg-black/80 border-0">
+            {generating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5" />}
+            PDF
+          </Button>
           <Button onClick={handleShare} variant="secondary" size="icon" className="h-8 w-8 bg-black/60 backdrop-blur-md text-white hover:bg-black/80 border-0">
             <Share2 className="w-4 h-4" />
           </Button>
