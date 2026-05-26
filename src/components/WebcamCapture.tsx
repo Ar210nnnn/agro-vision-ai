@@ -16,16 +16,32 @@ const WebcamCapture = ({ onCapture, isAnalyzing }: WebcamCaptureProps) => {
   const isMobile = useIsMobile();
   const [scanCount, setScanCount] = useState(0);
   const [isPaused, setIsPaused] = useState(true);
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>(isMobile ? 'environment' : 'user');
+  const [camKey, setCamKey] = useState(0);
 
   const handleUserMedia = useCallback(() => {
     setHasPermission(true);
     toast.success('Cámara conectada');
   }, []);
 
-  const handleUserMediaError = useCallback(() => {
+  const handleUserMediaError = useCallback((err: string | DOMException) => {
+    console.error('Camera error:', err);
+    // If environment camera fails, try user camera as fallback
+    if (facingMode === 'environment') {
+      toast.message('Cámara trasera no disponible, usando frontal');
+      setFacingMode('user');
+      setCamKey(k => k + 1);
+      return;
+    }
     setHasPermission(false);
-    toast.error('No se pudo acceder a la cámara. Verifica los permisos.');
-  }, []);
+    toast.error('No se pudo acceder a la cámara. Verifica los permisos del navegador.');
+  }, [facingMode]);
+
+  const switchCamera = () => {
+    setFacingMode(f => (f === 'environment' ? 'user' : 'environment'));
+    setHasPermission(null);
+    setCamKey(k => k + 1);
+  };
 
   const capture = useCallback(() => {
     const imageSrc = webcamRef.current?.getScreenshot();
