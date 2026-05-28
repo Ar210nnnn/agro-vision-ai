@@ -211,6 +211,19 @@ const WebcamCapture = ({ onCapture, isAnalyzing }: WebcamCaptureProps) => {
               <Camera className="w-4 h-4" />
               {facingMode === 'environment' ? 'Trasera' : 'Frontal'}
             </Button>
+            {torchAvailable && (
+              <Button
+                size="sm"
+                variant={torchOn ? 'default' : 'secondary'}
+                className="rounded-full px-3 gap-1.5"
+                onClick={toggleTorch}
+                disabled={isAnalyzing}
+                title="Flash"
+              >
+                {torchOn ? <Zap className="w-4 h-4" /> : <ZapOff className="w-4 h-4" />}
+                Flash
+              </Button>
+            )}
           </div>
         </div>
       )}
