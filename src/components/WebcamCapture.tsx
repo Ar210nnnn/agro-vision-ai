@@ -1,8 +1,9 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import Webcam from 'react-webcam';
-import { Camera, Loader2, Scan, Wifi, WifiOff, Play, Pause } from 'lucide-react';
+import { Camera, Loader2, Scan, Wifi, WifiOff, Play, Pause, Zap, ZapOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { setTorch } from '@/lib/torch';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface WebcamCaptureProps {
@@ -18,10 +19,31 @@ const WebcamCapture = ({ onCapture, isAnalyzing }: WebcamCaptureProps) => {
   const [isPaused, setIsPaused] = useState(true);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>(isMobile ? 'environment' : 'user');
   const [camKey, setCamKey] = useState(0);
+  const [torchOn, setTorchOn] = useState(false);
+  const [torchAvailable, setTorchAvailable] = useState(false);
+
+  const toggleTorch = async () => {
+    const stream = (webcamRef.current?.stream as MediaStream | null) ?? null;
+    const ok = await setTorch(stream, !torchOn);
+    if (ok) {
+      setTorchOn(v => !v);
+    } else {
+      toast.message('Tu dispositivo no soporta flash desde el navegador. En la app nativa funcionará.');
+      setTorchAvailable(false);
+    }
+  };
+
 
   const handleUserMedia = useCallback(() => {
     setHasPermission(true);
     toast.success('Cámara conectada');
+    // Detect torch capability on the active track
+    setTimeout(() => {
+      const stream = webcamRef.current?.stream as MediaStream | undefined;
+      const track = stream?.getVideoTracks?.()[0];
+      const caps = (track?.getCapabilities?.() as MediaTrackCapabilities & { torch?: boolean }) ?? {};
+      setTorchAvailable(Boolean(caps.torch));
+    }, 500);
   }, []);
 
   const handleUserMediaError = useCallback((err: string | DOMException) => {
@@ -189,6 +211,19 @@ const WebcamCapture = ({ onCapture, isAnalyzing }: WebcamCaptureProps) => {
               <Camera className="w-4 h-4" />
               {facingMode === 'environment' ? 'Trasera' : 'Frontal'}
             </Button>
+            {torchAvailable && (
+              <Button
+                size="sm"
+                variant={torchOn ? 'default' : 'secondary'}
+                className="rounded-full px-3 gap-1.5"
+                onClick={toggleTorch}
+                disabled={isAnalyzing}
+                title="Flash"
+              >
+                {torchOn ? <Zap className="w-4 h-4" /> : <ZapOff className="w-4 h-4" />}
+                Flash
+              </Button>
+            )}
           </div>
         </div>
       )}

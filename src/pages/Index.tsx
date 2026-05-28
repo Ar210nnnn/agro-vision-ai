@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Leaf, Sparkles, MessageCircle, Clock, Activity, Zap, Shield, BarChart3, Cpu, CloudRain } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Leaf, Sparkles, MessageCircle, Clock, Activity, Zap, Shield, BarChart3, Cpu, CloudRain, Map as MapIcon, TrendingUp } from 'lucide-react';
 import ClimateWidget from '@/components/ClimateWidget';
 import WebcamCapture from '@/components/WebcamCapture';
 import PlantAnalysis from '@/components/PlantAnalysis';
@@ -7,15 +7,31 @@ import AnalysisHistory from '@/components/AnalysisHistory';
 import ExpertChat from '@/components/ExpertChat';
 import StatsDashboard from '@/components/StatsDashboard';
 import ThemeToggle from '@/components/ThemeToggle';
+import UserMenu from '@/components/UserMenu';
+import PlantMap from '@/components/PlantMap';
+import PlantEvolution from '@/components/PlantEvolution';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
 const Index = () => {
+  const { user } = useAuth();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [currentAnalysis, setCurrentAnalysis] = useState<any>(null);
   const [capturedImage, setCapturedImage] = useState<string | undefined>();
   const [analysisCount, setAnalysisCount] = useState(0);
+  const [geo, setGeo] = useState<{ lat: number; lng: number } | null>(null);
+
+  // Request geolocation once on mount (silent — user can deny)
+  useEffect(() => {
+    if (!('geolocation' in navigator)) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setGeo({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => { /* denied → silent */ },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 300000 }
+    );
+  }, []);
 
   const handleCapture = async (imageSrc: string) => {
     if (isAnalyzing) return;
@@ -56,7 +72,10 @@ const Index = () => {
         recommendations: data.recommendations,
         image_url: imageSrc.substring(0, 500),
         pigmentation_data: data.pigmentation,
-        metadata: { issues: data.issues || [] }
+        metadata: { issues: data.issues || [] },
+        user_id: user?.id ?? null,
+        latitude: geo?.lat ?? null,
+        longitude: geo?.lng ?? null,
       });
 
       if (data.confidence > 0) {
@@ -98,11 +117,8 @@ const Index = () => {
                 {analysisCount} análisis
               </div>
             )}
-            <div className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground bg-card/60 px-3 py-1.5 rounded-full border border-border/50 backdrop-blur-sm">
-              <Shield className="w-3 h-3 text-accent" />
-              Gemini · Pro
-            </div>
             <ThemeToggle />
+            <UserMenu />
           </div>
         </div>
       </header>
@@ -172,22 +188,24 @@ const Index = () => {
           <div className="lg:col-span-5">
             <div className="lg:sticky lg:top-20">
               <Tabs defaultValue="stats" className="w-full">
-                <TabsList className="grid w-full grid-cols-4 h-11 rounded-2xl bg-muted/60 p-1 backdrop-blur-sm">
-                  <TabsTrigger value="stats" className="rounded-xl text-[11px] font-medium flex items-center gap-1 data-[state=active]:bg-card data-[state=active]:shadow-sm">
+                <TabsList className="grid w-full grid-cols-6 h-11 rounded-2xl bg-muted/60 p-1 backdrop-blur-sm">
+                  <TabsTrigger value="stats" className="rounded-xl text-[10px] font-medium flex items-center gap-1 data-[state=active]:bg-card data-[state=active]:shadow-sm" title="Stats">
                     <BarChart3 className="w-3.5 h-3.5" />
-                    Stats
                   </TabsTrigger>
-                  <TabsTrigger value="climate" className="rounded-xl text-[11px] font-medium flex items-center gap-1 data-[state=active]:bg-card data-[state=active]:shadow-sm">
+                  <TabsTrigger value="climate" className="rounded-xl text-[10px] font-medium flex items-center gap-1 data-[state=active]:bg-card data-[state=active]:shadow-sm" title="Clima">
                     <CloudRain className="w-3.5 h-3.5" />
-                    Clima
                   </TabsTrigger>
-                  <TabsTrigger value="history" className="rounded-xl text-[11px] font-medium flex items-center gap-1 data-[state=active]:bg-card data-[state=active]:shadow-sm">
+                  <TabsTrigger value="map" className="rounded-xl text-[10px] font-medium flex items-center gap-1 data-[state=active]:bg-card data-[state=active]:shadow-sm" title="Mapa">
+                    <MapIcon className="w-3.5 h-3.5" />
+                  </TabsTrigger>
+                  <TabsTrigger value="evo" className="rounded-xl text-[10px] font-medium flex items-center gap-1 data-[state=active]:bg-card data-[state=active]:shadow-sm" title="Evolución">
+                    <TrendingUp className="w-3.5 h-3.5" />
+                  </TabsTrigger>
+                  <TabsTrigger value="history" className="rounded-xl text-[10px] font-medium flex items-center gap-1 data-[state=active]:bg-card data-[state=active]:shadow-sm" title="Historial">
                     <Clock className="w-3.5 h-3.5" />
-                    Historial
                   </TabsTrigger>
-                  <TabsTrigger value="chat" className="rounded-xl text-[11px] font-medium flex items-center gap-1 data-[state=active]:bg-card data-[state=active]:shadow-sm">
+                  <TabsTrigger value="chat" className="rounded-xl text-[10px] font-medium flex items-center gap-1 data-[state=active]:bg-card data-[state=active]:shadow-sm" title="Chat">
                     <MessageCircle className="w-3.5 h-3.5" />
-                    Chat
                   </TabsTrigger>
                 </TabsList>
 
@@ -198,11 +216,8 @@ const Index = () => {
                         <BarChart3 className="w-4 h-4 text-primary" />
                         Dashboard Inteligente
                       </h3>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">Métricas en vivo de tus análisis</p>
                     </div>
-                    <div className="p-3">
-                      <StatsDashboard />
-                    </div>
+                    <div className="p-3"><StatsDashboard /></div>
                   </div>
                 </TabsContent>
 
@@ -211,13 +226,36 @@ const Index = () => {
                     <div className="px-4 py-3 border-b border-border/50 bg-gradient-to-r from-blue-500/10 to-cyan-500/5">
                       <h3 className="font-semibold text-sm flex items-center gap-2 text-foreground">
                         <CloudRain className="w-4 h-4 text-blue-500" />
-                        Clima & Riesgos Predictivos
+                        Clima & Riesgos
                       </h3>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">Datos meteorológicos en vivo de tu zona</p>
                     </div>
-                    <div className="p-3">
-                      <ClimateWidget currentDiagnosis={currentAnalysis} />
+                    <div className="p-3"><ClimateWidget currentDiagnosis={currentAnalysis} /></div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="map" className="mt-3">
+                  <div className="bg-card/80 backdrop-blur-sm rounded-2xl border border-border/50 shadow-soft overflow-hidden">
+                    <div className="px-4 py-3 border-b border-border/50 bg-gradient-to-r from-emerald-500/10 to-teal-500/5">
+                      <h3 className="font-semibold text-sm flex items-center gap-2 text-foreground">
+                        <MapIcon className="w-4 h-4 text-emerald-500" />
+                        Mapa de mis plantas
+                      </h3>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">Coloreadas por estado de salud</p>
                     </div>
+                    <div className="p-3"><PlantMap /></div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="evo" className="mt-3">
+                  <div className="bg-card/80 backdrop-blur-sm rounded-2xl border border-border/50 shadow-soft overflow-hidden">
+                    <div className="px-4 py-3 border-b border-border/50 bg-gradient-to-r from-purple-500/10 to-fuchsia-500/5">
+                      <h3 className="font-semibold text-sm flex items-center gap-2 text-foreground">
+                        <TrendingUp className="w-4 h-4 text-purple-500" />
+                        Evolución temporal
+                      </h3>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">La IA compara cómo va tu planta en el tiempo</p>
+                    </div>
+                    <div className="p-3"><PlantEvolution /></div>
                   </div>
                 </TabsContent>
 
@@ -226,13 +264,10 @@ const Index = () => {
                     <div className="px-4 py-3 border-b border-border/50 bg-gradient-to-r from-primary/5 to-accent/5">
                       <h3 className="font-semibold text-sm flex items-center gap-2 text-foreground">
                         <Clock className="w-4 h-4 text-primary" />
-                        Análisis Recientes
+                        Mis análisis
                       </h3>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">Sincronización en tiempo real</p>
                     </div>
-                    <div className="p-3">
-                      <AnalysisHistory />
-                    </div>
+                    <div className="p-3"><AnalysisHistory /></div>
                   </div>
                 </TabsContent>
 
@@ -243,7 +278,6 @@ const Index = () => {
                         <Sparkles className="w-4 h-4 text-primary" />
                         Experto Agrónomo IA
                       </h3>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">Consultas sobre cuidados y diagnósticos</p>
                     </div>
                     <ExpertChat />
                   </div>
@@ -254,7 +288,6 @@ const Index = () => {
         </div>
       </main>
 
-      {/* Footer */}
       <footer className="border-t border-border/30 mt-8 py-4">
         <div className="container mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] text-muted-foreground">
           <div className="flex items-center gap-2">
