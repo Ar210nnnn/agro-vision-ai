@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Leaf, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface HistoryItem {
   id: string;
@@ -10,35 +11,40 @@ interface HistoryItem {
   plant_type: string;
   health_status: string;
   confidence: number;
+  user_id?: string | null;
 }
 
 const AnalysisHistory = () => {
+  const { user } = useAuth();
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchHistory = async () => {
-    const { data } = await supabase
-      .from('plant_analyses')
-      .select('id, created_at, plant_type, health_status, confidence')
-      .order('created_at', { ascending: false })
-      .limit(20);
-    setHistory(data || []);
-    setIsLoading(false);
-  };
-
   useEffect(() => {
+    const fetchHistory = async () => {
+      let q = supabase
+        .from('plant_analyses')
+        .select('id, created_at, plant_type, health_status, confidence, user_id')
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (user) q = q.eq('user_id', user.id);
+      const { data } = await q;
+      setHistory((data as HistoryItem[]) ?? []);
+      setIsLoading(false);
+    };
     fetchHistory();
 
-    // Real-time subscription
     const channel = supabase
       .channel('history-realtime')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'plant_analyses' }, (payload) => {
-        setHistory(prev => [payload.new as HistoryItem, ...prev].slice(0, 20));
+        const row = payload.new as HistoryItem;
+        if (user && row.user_id !== user.id) return;
+        setHistory(prev => [row, ...prev].slice(0, 20));
       })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, []);
+  }, [user]);
+
 
   const getStatusColor = (status: string) => {
     const s = status.toLowerCase();
