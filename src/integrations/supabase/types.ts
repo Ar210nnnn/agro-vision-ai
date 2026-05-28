@@ -75,10 +75,15 @@ export type Database = {
           health_status: string
           id: string
           image_url: string | null
+          latitude: number | null
+          longitude: number | null
           metadata: Json | null
           pigmentation_data: Json | null
+          plant_nickname: string | null
           plant_type: string | null
           recommendations: string | null
+          tracked_plant_id: string | null
+          user_id: string | null
         }
         Insert: {
           confidence?: number | null
@@ -87,10 +92,15 @@ export type Database = {
           health_status: string
           id?: string
           image_url?: string | null
+          latitude?: number | null
+          longitude?: number | null
           metadata?: Json | null
           pigmentation_data?: Json | null
+          plant_nickname?: string | null
           plant_type?: string | null
           recommendations?: string | null
+          tracked_plant_id?: string | null
+          user_id?: string | null
         }
         Update: {
           confidence?: number | null
@@ -99,10 +109,95 @@ export type Database = {
           health_status?: string
           id?: string
           image_url?: string | null
+          latitude?: number | null
+          longitude?: number | null
           metadata?: Json | null
           pigmentation_data?: Json | null
+          plant_nickname?: string | null
           plant_type?: string | null
           recommendations?: string | null
+          tracked_plant_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plant_analyses_tracked_plant_id_fkey"
+            columns: ["tracked_plant_id"]
+            isOneToOne: false
+            referencedRelation: "tracked_plants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          location_name: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          location_name?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          location_name?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tracked_plants: {
+        Row: {
+          cover_image: string | null
+          created_at: string
+          id: string
+          latitude: number | null
+          longitude: number | null
+          nickname: string
+          notes: string | null
+          species: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cover_image?: string | null
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          nickname: string
+          notes?: string | null
+          species?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cover_image?: string | null
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          nickname?: string
+          notes?: string | null
+          species?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
