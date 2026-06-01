@@ -22,9 +22,11 @@ const ExpertChat = () => {
 
   useEffect(() => {
     const init = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
       const { data } = await supabase
         .from('chat_conversations')
-        .insert({ title: 'Consulta Experto' })
+        .insert({ title: 'Consulta Experto', user_id: user.id })
         .select()
         .single();
       if (data) {
