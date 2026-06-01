@@ -38,6 +38,18 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Verify conversation ownership
+    const { data: conv } = await supabase
+      .from('chat_conversations')
+      .select('user_id')
+      .eq('id', conversationId)
+      .maybeSingle();
+    if (!conv || conv.user_id !== auth.userId) {
+      return new Response(JSON.stringify({ error: 'Conversación no encontrada' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Get message history
     const { data: history } = await supabase
       .from('chat_messages')
