@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Leaf, Sparkles, MessageCircle, Clock, Activity, Zap, Shield, BarChart3, Cpu, CloudRain, Map as MapIcon, TrendingUp } from 'lucide-react';
+import { Leaf, Sparkles, MessageCircle, Clock, Activity, Zap, Shield, BarChart3, Cpu, CloudRain, Map as MapIcon, TrendingUp, FlaskConical } from 'lucide-react';
 import ClimateWidget from '@/components/ClimateWidget';
 import WebcamCapture from '@/components/WebcamCapture';
 import PlantAnalysis from '@/components/PlantAnalysis';
@@ -10,6 +10,10 @@ import ThemeToggle from '@/components/ThemeToggle';
 import UserMenu from '@/components/UserMenu';
 import PlantMap from '@/components/PlantMap';
 import PlantEvolution from '@/components/PlantEvolution';
+import ProductLabelScan from '@/components/ProductLabelScan';
+import ReportExport from '@/components/ReportExport';
+import OfflineIndicator, { OnlineBadge } from '@/components/OfflineIndicator';
+import { cacheAnalysis } from '@/hooks/useOffline';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -63,6 +67,7 @@ const Index = () => {
 
       setCurrentAnalysis(data);
       setAnalysisCount(prev => prev + 1);
+      cacheAnalysis({ ...data, image_url: imageSrc.substring(0, 500), created_at: new Date().toISOString() });
 
       await supabase.from('plant_analyses').insert({
         plant_type: data.plant_type,
@@ -111,6 +116,7 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <OnlineBadge />
             {analysisCount > 0 && (
               <div className="hidden sm:flex items-center gap-1.5 text-xs bg-primary/10 px-3 py-1.5 rounded-full border border-primary/20 text-primary font-medium">
                 <Activity className="w-3 h-3" />
@@ -188,7 +194,7 @@ const Index = () => {
           <div className="lg:col-span-5">
             <div className="lg:sticky lg:top-20">
               <Tabs defaultValue="stats" className="w-full">
-                <TabsList className="grid w-full grid-cols-6 h-11 rounded-2xl bg-muted/60 p-1 backdrop-blur-sm">
+                <TabsList className="grid w-full grid-cols-7 h-11 rounded-2xl bg-muted/60 p-1 backdrop-blur-sm">
                   <TabsTrigger value="stats" className="rounded-xl text-[10px] font-medium flex items-center gap-1 data-[state=active]:bg-card data-[state=active]:shadow-sm" title="Stats">
                     <BarChart3 className="w-3.5 h-3.5" />
                   </TabsTrigger>
@@ -200,6 +206,9 @@ const Index = () => {
                   </TabsTrigger>
                   <TabsTrigger value="evo" className="rounded-xl text-[10px] font-medium flex items-center gap-1 data-[state=active]:bg-card data-[state=active]:shadow-sm" title="Evolución">
                     <TrendingUp className="w-3.5 h-3.5" />
+                  </TabsTrigger>
+                  <TabsTrigger value="pro" className="rounded-xl text-[10px] font-medium flex items-center gap-1 data-[state=active]:bg-card data-[state=active]:shadow-sm" title="Pro">
+                    <FlaskConical className="w-3.5 h-3.5" />
                   </TabsTrigger>
                   <TabsTrigger value="history" className="rounded-xl text-[10px] font-medium flex items-center gap-1 data-[state=active]:bg-card data-[state=active]:shadow-sm" title="Historial">
                     <Clock className="w-3.5 h-3.5" />
@@ -259,6 +268,22 @@ const Index = () => {
                   </div>
                 </TabsContent>
 
+                <TabsContent value="pro" className="mt-3">
+                  <div className="bg-card/80 backdrop-blur-sm rounded-2xl border border-border/50 shadow-soft overflow-hidden">
+                    <div className="px-4 py-3 border-b border-border/50 bg-gradient-to-r from-amber-500/10 to-orange-500/5">
+                      <h3 className="font-semibold text-sm flex items-center gap-2 text-foreground">
+                        <FlaskConical className="w-4 h-4 text-amber-600" />
+                        Herramientas Pro
+                      </h3>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">Etiquetas de productos · Reporte PDF profesional</p>
+                    </div>
+                    <div className="p-3 space-y-3">
+                      <ProductLabelScan />
+                      <ReportExport />
+                    </div>
+                  </div>
+                </TabsContent>
+
                 <TabsContent value="history" className="mt-3">
                   <div className="bg-card/80 backdrop-blur-sm rounded-2xl border border-border/50 shadow-soft overflow-hidden">
                     <div className="px-4 py-3 border-b border-border/50 bg-gradient-to-r from-primary/5 to-accent/5">
@@ -300,6 +325,7 @@ const Index = () => {
           </div>
         </div>
       </footer>
+      <OfflineIndicator />
     </div>
   );
 };
