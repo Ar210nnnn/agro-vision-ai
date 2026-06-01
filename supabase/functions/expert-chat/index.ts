@@ -1,22 +1,32 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { corsHeaders, requireUser } from "../_shared/auth.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-};
+const MAX_MESSAGE_LEN = 2000;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const auth = await requireUser(req);
+  if (auth instanceof Response) return auth;
+
   try {
     const { conversationId, message } = await req.json();
 
-    if (!conversationId || !message) {
-      throw new Error('Faltan parámetros requeridos');
+    if (!conversationId || typeof conversationId !== 'string' ||
+        !message || typeof message !== 'string') {
+      return new Response(JSON.stringify({ error: 'Faltan parámetros válidos' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
+    if (message.length > MAX_MESSAGE_LEN) {
+      return new Response(JSON.stringify({ error: `Mensaje demasiado largo (máx ${MAX_MESSAGE_LEN} caracteres)` }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
