@@ -1,33 +1,38 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { corsHeaders, requireUser } from "../_shared/auth.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const MAX_SCANS = 5;
+const MAX_FIELD_LEN = 500;
+const sanitize = (v: unknown) =>
+  String(v ?? '').replace(/[\r\n`]/g, ' ').slice(0, MAX_FIELD_LEN);
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+
+  const auth = await requireUser(req);
+  if (auth instanceof Response) return auth;
 
   try {
     const { plant_type, scans } = await req.json();
     if (!Array.isArray(scans) || scans.length < 2) {
       return new Response(JSON.stringify({ error: 'Se necesitan al menos 2 escaneos' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
+    const limitedScans = scans.slice(0, MAX_SCANS);
+    const safePlantType = sanitize(plant_type) || 'Planta';
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY no está configurada');
 
-    const timeline = scans.map((s: any, i: number) =>
-      `Escaneo #${i + 1} (${s.date}): salud="${s.health}" | diagnóstico="${s.diagnosis}"`
+    const timeline = limitedScans.map((s: any, i: number) =>
+      `Escaneo #${i + 1} (${sanitize(s.date)}): salud="${sanitize(s.health)}" | diagnóstico="${sanitize(s.diagnosis)}"`
     ).join('\n');
 
     const userContent: any[] = [
-      { type: 'text', text: `Planta: ${plant_type}\n\nHistorial cronológico:\n${timeline}\n\nCompara y dime si la planta mejora, empeora o se mantiene estable a lo largo del tiempo. Responde SOLO con JSON: { "trend": "better"|"worse"|"stable", "analysis": "explicación breve (2-3 frases) de la tendencia, qué cambió y qué hacer ahora" }` }
+      { type: 'text', text: `Planta: ${safePlantType}\n\nHistorial cronológico:\n${timeline}\n\nCompara y dime si la planta mejora, empeora o se mantiene estable a lo largo del tiempo. Responde SOLO con JSON: { "trend": "better"|"worse"|"stable", "analysis": "explicación breve (2-3 frases) de la tendencia, qué cambió y qué hacer ahora" }` }
     ];
 
-    // Add images if available
-    scans.forEach((s: any) => {
-      if (s.image && typeof s.image === 'string' && s.image.startsWith('data:')) {
+    limitedScans.forEach((s: any) => {
+      if (s.image && typeof s.image === 'string' && s.image.startsWith('data:') && s.image.length < 1_500_000) {
         userContent.push({ type: 'image_url', image_url: { url: s.image } });
       }
     });
