@@ -74,6 +74,37 @@ const WebcamCapture = ({ onCapture, isAnalyzing }: WebcamCaptureProps) => {
     }
   }, [onCapture]);
 
+  const handleFileUpload = useCallback((file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast.error('Selecciona un archivo de imagen válido');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      // Resize to max 1280px to keep payload small
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 1280;
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { onCapture(dataUrl); return; }
+        ctx.drawImage(img, 0, 0, w, h);
+        const compressed = canvas.toDataURL('image/jpeg', 0.85);
+        setScanCount(prev => prev + 1);
+        setIsPaused(true);
+        onCapture(compressed);
+        toast.success('Imagen cargada, analizando...');
+      };
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+  }, [onCapture]);
+
   // Auto-scan only when not paused
   useEffect(() => {
     if (hasPermission && !isAnalyzing && !isPaused) {
