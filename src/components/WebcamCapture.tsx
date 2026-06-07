@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import Webcam from 'react-webcam';
-import { Camera, Loader2, Scan, Wifi, WifiOff, Play, Pause, Zap, ZapOff } from 'lucide-react';
+import { Camera, Loader2, Scan, Wifi, WifiOff, Play, Pause, Zap, ZapOff, ImagePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { setTorch } from '@/lib/torch';
@@ -13,6 +13,7 @@ interface WebcamCaptureProps {
 
 const WebcamCapture = ({ onCapture, isAnalyzing }: WebcamCaptureProps) => {
   const webcamRef = useRef<Webcam>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const isMobile = useIsMobile();
   const [scanCount, setScanCount] = useState(0);
@@ -73,6 +74,37 @@ const WebcamCapture = ({ onCapture, isAnalyzing }: WebcamCaptureProps) => {
     }
   }, [onCapture]);
 
+  const handleFileUpload = useCallback((file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast.error('Selecciona un archivo de imagen válido');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      // Resize to max 1280px to keep payload small
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 1280;
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { onCapture(dataUrl); return; }
+        ctx.drawImage(img, 0, 0, w, h);
+        const compressed = canvas.toDataURL('image/jpeg', 0.85);
+        setScanCount(prev => prev + 1);
+        setIsPaused(true);
+        onCapture(compressed);
+        toast.success('Imagen cargada, analizando...');
+      };
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+  }, [onCapture]);
+
   // Auto-scan only when not paused
   useEffect(() => {
     if (hasPermission && !isAnalyzing && !isPaused) {
@@ -85,6 +117,17 @@ const WebcamCapture = ({ onCapture, isAnalyzing }: WebcamCaptureProps) => {
 
   return (
     <div className="relative rounded-2xl overflow-hidden bg-black shadow-card group">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) handleFileUpload(f);
+          e.target.value = '';
+        }}
+      />
       {/* Live indicator */}
       {hasPermission && (
         <div className="absolute top-3 left-3 z-20 flex items-center gap-2">
@@ -224,7 +267,34 @@ const WebcamCapture = ({ onCapture, isAnalyzing }: WebcamCaptureProps) => {
                 Flash
               </Button>
             )}
+            <Button
+              size="sm"
+              variant="secondary"
+              className="rounded-full px-3 gap-1.5"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isAnalyzing}
+              title="Subir desde galería"
+            >
+              <ImagePlus className="w-4 h-4" />
+              Galería
+            </Button>
           </div>
+        </div>
+      )}
+
+      {/* Fallback when camera not available: allow gallery upload */}
+      {hasPermission === false && (
+        <div className="absolute bottom-4 left-0 right-0 z-30 flex justify-center">
+          <Button
+            size="sm"
+            variant="default"
+            className="rounded-full px-4 gap-2"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isAnalyzing}
+          >
+            <ImagePlus className="w-4 h-4" />
+            Subir foto desde galería
+          </Button>
         </div>
       )}
     </div>
