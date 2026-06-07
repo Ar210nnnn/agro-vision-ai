@@ -13,6 +13,7 @@ interface WebcamCaptureProps {
 
 const WebcamCapture = ({ onCapture, isAnalyzing }: WebcamCaptureProps) => {
   const webcamRef = useRef<Webcam>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const isMobile = useIsMobile();
   const [scanCount, setScanCount] = useState(0);
