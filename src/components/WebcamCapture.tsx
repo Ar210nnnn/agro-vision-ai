@@ -117,6 +117,17 @@ const WebcamCapture = ({ onCapture, isAnalyzing }: WebcamCaptureProps) => {
 
   return (
     <div className="relative rounded-2xl overflow-hidden bg-black shadow-card group">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) handleFileUpload(f);
+          e.target.value = '';
+        }}
+      />
       {/* Live indicator */}
       {hasPermission && (
         <div className="absolute top-3 left-3 z-20 flex items-center gap-2">
