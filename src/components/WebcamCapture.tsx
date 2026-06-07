@@ -267,7 +267,34 @@ const WebcamCapture = ({ onCapture, isAnalyzing }: WebcamCaptureProps) => {
                 Flash
               </Button>
             )}
+            <Button
+              size="sm"
+              variant="secondary"
+              className="rounded-full px-3 gap-1.5"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isAnalyzing}
+              title="Subir desde galería"
+            >
+              <ImagePlus className="w-4 h-4" />
+              Galería
+            </Button>
           </div>
+        </div>
+      )}
+
+      {/* Fallback when camera not available: allow gallery upload */}
+      {hasPermission === false && (
+        <div className="absolute bottom-4 left-0 right-0 z-30 flex justify-center">
+          <Button
+            size="sm"
+            variant="default"
+            className="rounded-full px-4 gap-2"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isAnalyzing}
+          >
+            <ImagePlus className="w-4 h-4" />
+            Subir foto desde galería
+          </Button>
         </div>
       )}
     </div>
