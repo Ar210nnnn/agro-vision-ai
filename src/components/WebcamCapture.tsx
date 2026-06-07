@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import Webcam from 'react-webcam';
-import { Camera, Loader2, Scan, Wifi, WifiOff, Play, Pause, Zap, ZapOff } from 'lucide-react';
+import { Camera, Loader2, Scan, Wifi, WifiOff, Play, Pause, Zap, ZapOff, ImagePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { setTorch } from '@/lib/torch';
