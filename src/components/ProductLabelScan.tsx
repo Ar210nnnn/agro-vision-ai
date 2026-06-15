@@ -1,11 +1,22 @@
-import { useRef, useState } from 'react';
-import { Upload, Camera, Loader2, AlertTriangle, Sparkles, Shield, Droplets, Calendar, Leaf } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Upload, Camera, Loader2, AlertTriangle, Sparkles, Shield, Droplets, Calendar, Leaf, Calculator, Sprout, CheckCircle2, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+interface CrossDiagnosis {
+  is_suitable: boolean;
+  match_score: number;
+  reason: string;
+  recommended_dose_for_plant: string;
+  warning: string;
+}
+interface OrganicAlt { name: string; description: string; }
 interface LabelResult {
   product_name: string;
   product_type: string;
@@ -20,13 +31,42 @@ interface LabelResult {
   compatible_crops: string[];
   expert_tips: string;
   confidence: number;
+  dose_ml_per_liter?: number;
+  liters_solution_per_m2?: number;
+  cross_diagnosis?: CrossDiagnosis;
+  organic_alternatives?: OrganicAlt[];
+}
+
+interface PlantContext {
+  plant_type: string | null;
+  health_status: string;
+  diagnosis: string;
 }
 
 const ProductLabelScan = () => {
   const inputRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [result, setResult] = useState<LabelResult | null>(null);
+  const [plantContext, setPlantContext] = useState<PlantContext | null>(null);
+  const [useContext, setUseContext] = useState(true);
+  const [area, setArea] = useState<string>('10');
+
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from('plant_analyses')
+        .select('plant_type, health_status, diagnosis')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data) setPlantContext(data as PlantContext);
+    })();
+  }, []);
 
   const handleFile = async (file: File) => {
     if (!file) return;
@@ -37,7 +77,6 @@ const ProductLabelScan = () => {
     const reader = new FileReader();
     reader.onload = async (e) => {
       const dataUrl = e.target?.result as string;
-      // compress via canvas to stay below edge limit
       const img = new Image();
       img.onload = async () => {
         const canvas = document.createElement('canvas');
@@ -55,7 +94,10 @@ const ProductLabelScan = () => {
         setResult(null);
         try {
           const { data, error } = await supabase.functions.invoke('analyze-label', {
-            body: { imageBase64: compressed }
+            body: {
+              imageBase64: compressed,
+              plantContext: useContext && plantContext ? plantContext : null,
+            }
           });
           if (error || data?.error) {
             toast.error(data?.error || 'Error al analizar la etiqueta');
@@ -74,15 +116,34 @@ const ProductLabelScan = () => {
     reader.readAsDataURL(file);
   };
 
+  // Dose calculator
+  const areaNum = parseFloat(area) || 0;
+  const litersSolution = result?.liters_solution_per_m2 ? +(result.liters_solution_per_m2 * areaNum).toFixed(2) : 0;
+  const productMl = result?.dose_ml_per_liter && litersSolution
+    ? +(result.dose_ml_per_liter * litersSolution).toFixed(2)
+    : 0;
+
   return (
     <div className="space-y-3">
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
-      />
+      <input ref={inputRef} type="file" accept="image/*" className="hidden"
+        onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden"
+        onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
+
+      {plantContext && !preview && (
+        <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <Sprout className="w-4 h-4 text-emerald-600 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs font-semibold truncate">
+                Cruzar con: {plantContext.plant_type || 'última planta'}
+              </p>
+              <p className="text-[10px] text-muted-foreground truncate">{plantContext.health_status}</p>
+            </div>
+          </div>
+          <Switch checked={useContext} onCheckedChange={setUseContext} />
+        </div>
+      )}
 
       {!preview && (
         <div className="bg-gradient-to-br from-amber-500/5 to-orange-500/5 border border-dashed border-amber-500/30 rounded-2xl p-6 text-center">
@@ -91,11 +152,16 @@ const ProductLabelScan = () => {
           </div>
           <p className="text-sm font-semibold mb-1">Escanea una etiqueta agrícola</p>
           <p className="text-xs text-muted-foreground mb-4">
-            Fertilizantes, pesticidas, fungicidas… la IA extrae dosis, uso, seguridad y consejos.
+            IA extrae dosis, seguridad, alternativas orgánicas y compatibilidad con tu planta.
           </p>
-          <Button onClick={() => inputRef.current?.click()} className="gap-2">
-            <Camera className="w-4 h-4" /> Tomar foto / subir
-          </Button>
+          <div className="flex gap-2 justify-center">
+            <Button onClick={() => cameraRef.current?.click()} className="gap-2">
+              <Camera className="w-4 h-4" /> Cámara
+            </Button>
+            <Button variant="outline" onClick={() => inputRef.current?.click()} className="gap-2">
+              <Upload className="w-4 h-4" /> Galería
+            </Button>
+          </div>
         </div>
       )}
 
@@ -108,19 +174,16 @@ const ProductLabelScan = () => {
               <p className="text-sm font-medium">Analizando etiqueta…</p>
             </div>
           )}
-          <Button
-            size="sm"
-            variant="secondary"
+          <Button size="sm" variant="secondary"
             onClick={() => { setPreview(null); setResult(null); }}
-            className="absolute top-2 right-2"
-          >
+            className="absolute top-2 right-2">
             <Upload className="w-3 h-3 mr-1" /> Otra
           </Button>
         </div>
       )}
 
       {result && (
-        <ScrollArea className="h-[380px]">
+        <ScrollArea className="h-[420px]">
           <div className="space-y-3 pr-2">
             <div className="bg-card border border-border rounded-xl p-3">
               <div className="flex items-start justify-between gap-2">
@@ -135,6 +198,72 @@ const ProductLabelScan = () => {
                 )}
               </div>
             </div>
+
+            {useContext && plantContext && result.cross_diagnosis && (
+              <Section
+                icon={result.cross_diagnosis.is_suitable
+                  ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  : <XCircle className="w-3.5 h-3.5 text-red-500" />}
+                title={`Compatibilidad con ${plantContext.plant_type || 'tu planta'}`}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge className={result.cross_diagnosis.is_suitable
+                    ? 'bg-emerald-500/15 text-emerald-700'
+                    : 'bg-red-500/15 text-red-700'}>
+                    {result.cross_diagnosis.is_suitable ? 'Recomendado' : 'No recomendado'}
+                  </Badge>
+                  <Badge variant="outline" className="text-[10px]">
+                    Match {result.cross_diagnosis.match_score}%
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground mb-2">{result.cross_diagnosis.reason}</p>
+                {result.cross_diagnosis.recommended_dose_for_plant && (
+                  <p className="text-xs"><strong>Dosis sugerida:</strong> {result.cross_diagnosis.recommended_dose_for_plant}</p>
+                )}
+                {result.cross_diagnosis.warning && (
+                  <p className="text-xs text-red-700 mt-1 flex gap-1"><AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />{result.cross_diagnosis.warning}</p>
+                )}
+              </Section>
+            )}
+
+            {(result.dose_ml_per_liter || 0) > 0 && (
+              <Section icon={<Calculator className="w-3.5 h-3.5 text-primary" />} title="Calculadora de dosis">
+                <div className="flex items-center gap-2 mb-2">
+                  <Label htmlFor="area" className="text-xs">Área (m²):</Label>
+                  <Input
+                    id="area" type="number" min="0" value={area}
+                    onChange={(e) => setArea(e.target.value)}
+                    className="h-8 text-xs w-24"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="bg-primary/5 rounded-lg p-2">
+                    <p className="text-muted-foreground text-[10px]">Agua a preparar</p>
+                    <p className="font-bold text-primary">{litersSolution} L</p>
+                  </div>
+                  <div className="bg-amber-500/5 rounded-lg p-2">
+                    <p className="text-muted-foreground text-[10px]">Producto a usar</p>
+                    <p className="font-bold text-amber-700">{productMl} ml</p>
+                  </div>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-2">
+                  Basado en {result.dose_ml_per_liter} ml/L · {result.liters_solution_per_m2} L/m²
+                </p>
+              </Section>
+            )}
+
+            {result.organic_alternatives && result.organic_alternatives.length > 0 && (
+              <Section icon={<Leaf className="w-3.5 h-3.5 text-green-600" />} title="Alternativas orgánicas">
+                <div className="space-y-2">
+                  {result.organic_alternatives.map((a, i) => (
+                    <div key={i} className="bg-green-500/5 border border-green-500/15 rounded-lg p-2">
+                      <p className="text-xs font-semibold text-green-800">{a.name}</p>
+                      <p className="text-[11px] text-muted-foreground">{a.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </Section>
+            )}
 
             {result.active_ingredients?.length > 0 && (
               <Section icon={<Droplets className="w-3.5 h-3.5 text-blue-500" />} title="Ingredientes activos">
